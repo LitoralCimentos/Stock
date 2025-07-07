@@ -1,0 +1,2899 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LitoralCimentos - Sistema de Gestão</title>
+    <meta name="description" content="Sistema de gestão para loja de materiais de construção LitoralCimentos. Administre inventário, vendas e entregas de forma eficiente.">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+        }
+
+        .table th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        .stock-low {
+            background-color: #fff3cd;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .stock-critical {
+            background-color: #f8d7da;
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+        }
+
+        .delivery-badge {
+            background: linear-gradient(135deg, var(--success-color), #2ecc71);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+
+        .alert-dismissible {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+        }
+
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+            
+            .stats-card h3 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-store"></i> LitoralCimentos</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#dashboard" onclick="showSection('dashboard')">
+                            <i class="fas fa-chart-bar"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#productos" onclick="showSection('productos')">
+                            <i class="fas fa-boxes"></i> Produtos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#ventas" onclick="showSection('ventas')">
+                            <i class="fas fa-shopping-cart"></i> Vendas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#historial" onclick="showSection('historial')">
+                            <i class="fas fa-history"></i> Histórico
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#analytics" onclick="showSection('analytics')">
+                            <i class="fas fa-chart-line"></i> Relatórios
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#calculator" onclick="showSection('calculator')">
+                            <i class="fas fa-calculator"></i> Calculadora
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#expenses" onclick="showSection('expenses')">
+                            <i class="fas fa-money-bill-wave"></i> Gastos Fixos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#movements" onclick="showSection('movements')">
+                            <i class="fas fa-exchange-alt"></i> Movimentações
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#financial" onclick="showSection('financial')">
+                            <i class="fas fa-chart-pie"></i> Análise Financeira
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section">
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 id="totalProducts">0</h3>
+                            <p>Total Produtos</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 id="totalSales">0</h3>
+                            <p>Total Vendas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 id="lowStock">0</h3>
+                            <p>Estoque Baixo</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 id="pendingDeliveries">0</h3>
+                            <p>Entregas Pendentes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock Alerts -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle text-warning"></i> Alertas de Estoque</h5>
+                </div>
+                <div class="card-body">
+                    <div id="stockAlerts">
+                        <p class="text-muted">Não há alertas de estoque no momento.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Section -->
+        <div id="productos" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-boxes"></i> Gestão de Produtos</h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                        <i class="fas fa-tags"></i> Gerenciar Categorias
+                    </button>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#personalUseModal">
+                        <i class="fas fa-user"></i> Uso Pessoal
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
+                        <i class="fas fa-plus"></i> Adicionar Produto
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Search and Filter -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Buscar produtos</label>
+                                <input type="text" class="form-control" id="searchProducts" placeholder="Buscar por nome, código ou categoria...">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Filtrar por categoria</label>
+                                <select class="form-select" id="filterCategory">
+                                    <option value="">Todas as categorias</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Nome</th>
+                                    <th>Categoria</th>
+                                    <th>Preço</th>
+                                    <th>Estoque</th>
+                                    <th>Estoque Mínimo</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTable">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">Não há produtos cadastrados</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Section -->
+        <div id="ventas" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-shopping-cart"></i> Registro de Vendas</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#saleModal">
+                    <i class="fas fa-plus"></i> Nova Venda
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Produto</th>
+                                    <th>Quantidade</th>
+                                    <th>Preço Total</th>
+                                    <th>Pagamento</th>
+                                    <th>Entrega</th>
+                                    <th>Cliente</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesTable">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">Não há vendas registradas</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics/Reports Section -->
+        <div id="analytics" class="section" style="display: none;">
+            <h2><i class="fas fa-chart-line"></i> Relatórios de Vendas</h2>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-chart-bar"></i> Vendas por Período</h5>
+                        </div>
+                        <div class="card-body" style="height: 400px;">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-chart-pie"></i> Produtos Mais Vendidos</h5>
+                        </div>
+                        <div class="card-body" style="height: 400px;">
+                            <canvas id="productsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-calendar-alt"></i> Filtros de Período</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-outline-primary w-100" onclick="showSalesChart('7days'); setActiveButton(this)">Últimos 7 Dias</button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-primary w-100" onclick="showSalesChart('30days'); setActiveButton(this)">Últimos 30 Dias</button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-outline-primary w-100" onclick="showSalesChart('month'); setActiveButton(this)">Este Mês</button>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button class="btn btn-outline-primary w-100" onclick="showSalesChart('year'); setActiveButton(this)">Este Ano</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculator Section -->
+        <div id="calculator" class="section" style="display: none;">
+            <h2><i class="fas fa-calculator"></i> Calculadora de Preços</h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-percent"></i> Calculadora de Margem</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Preço de Custo</label>
+                                <input type="number" class="form-control" id="costPrice" step="0.01" placeholder="0.00">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Margem de Lucro (%)</label>
+                                <input type="number" class="form-control" id="profitMargin" step="0.01" placeholder="0.00">
+                            </div>
+                            <button class="btn btn-primary" onclick="calculateSellingPrice()">Calcular Preço de Venda</button>
+                            <div class="mt-3">
+                                <div class="alert alert-info" id="calculatorResult" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-money-bill-wave"></i> Calculadora Reversa</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Preço de Venda</label>
+                                <input type="number" class="form-control" id="sellingPrice" step="0.01" placeholder="0.00">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Preço de Custo</label>
+                                <input type="number" class="form-control" id="costPriceReverse" step="0.01" placeholder="0.00">
+                            </div>
+                            <button class="btn btn-success" onclick="calculateProfitMargin()">Calcular Margem</button>
+                            <div class="mt-3">
+                                <div class="alert alert-success" id="reverseCalculatorResult" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expenses Section -->
+        <div id="expenses" class="section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-money-bill-wave"></i> Gastos Fixos</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#expenseModal">
+                    <i class="fas fa-plus"></i> Adicionar Gasto
+                </button>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 id="totalExpenses">R$ 0,00</h3>
+                            <p>Total de Gastos Mensais</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 id="totalRevenue">R$ 0,00</h3>
+                            <p>Receita do Mês</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 id="netProfit">R$ 0,00</h3>
+                            <p>Lucro Líquido</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="card-body text-center">
+                            <h3 id="profitMarginPercent">0%</h3>
+                            <p>Margem de Lucro</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Lista de Gastos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th>Categoria</th>
+                                    <th>Valor</th>
+                                    <th>Frequência</th>
+                                    <th>Próximo Vencimento</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expensesTable">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Nenhum gasto cadastrado</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movimentações Section -->
+        <div id="movements" class="section" style="display: none;">
+            <h2><i class="fas fa-exchange-alt"></i> Movimentações de Estoque</h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-plus"></i> Registrar Movimentação</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="movementForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Produto</label>
+                                    <select class="form-select" id="movementProduct" required>
+                                        <option value="">Selecione um produto</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tipo de Movimentação</label>
+                                    <select class="form-select" id="movementType" required onchange="updateMovementFields()">
+                                        <option value="">Selecione o tipo</option>
+                                        <option value="entrada">Entrada (Compra)</option>
+                                        <option value="saida">Saída (Venda)</option>
+                                        <option value="perda">Perda/Dano</option>
+                                        <option value="uso_proprio">Uso Próprio</option>
+                                        <option value="ajuste">Ajuste de Estoque</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Quantidade</label>
+                                    <input type="number" class="form-control" id="movementQuantity" required>
+                                </div>
+                                <div class="mb-3" id="movementValueField" style="display: none;">
+                                    <label class="form-label">Valor Unitário (R$)</label>
+                                    <input type="number" class="form-control" id="movementValue" step="0.01">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Motivo/Observação</label>
+                                    <textarea class="form-control" id="movementReason" rows="3"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Registrar Movimentação</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-chart-line"></i> Resumo de Movimentações</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="stats-card bg-success text-white">
+                                        <h3 id="totalPurchases">R$ 0,00</h3>
+                                        <p>Total em Compras</p>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="stats-card bg-danger text-white">
+                                        <h3 id="totalLosses">R$ 0,00</h3>
+                                        <p>Total em Perdas</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-sm-6">
+                                    <div class="stats-card bg-warning text-white">
+                                        <h3 id="totalPersonalUse">R$ 0,00</h3>
+                                        <p>Uso Próprio</p>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="stats-card bg-info text-white">
+                                        <h3 id="totalAdjustments">R$ 0,00</h3>
+                                        <p>Ajustes</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-list"></i> Histórico de Movimentações</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Produto</th>
+                                            <th>Tipo</th>
+                                            <th>Quantidade</th>
+                                            <th>Valor</th>
+                                            <th>Motivo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="movementsList">
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">Nenhuma movimentação registrada</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análise Financeira Section -->
+        <div id="financial" class="section" style="display: none;">
+            <h2><i class="fas fa-chart-pie"></i> Análise Financeira Completa</h2>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-dollar-sign"></i> Receitas</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-card bg-success text-white">
+                                <h4 id="totalRevenue">R$ 0,00</h4>
+                                <p>Receita Bruta</p>
+                            </div>
+                            <div class="stats-card bg-primary text-white mt-2">
+                                <h4 id="totalGrossProfit">R$ 0,00</h4>
+                                <p>Lucro Bruto</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-shopping-cart"></i> Custos</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-card bg-warning text-white">
+                                <h4 id="totalCosts">R$ 0,00</h4>
+                                <p>Custo dos Produtos</p>
+                            </div>
+                            <div class="stats-card bg-danger text-white mt-2">
+                                <h4 id="totalFixedExpenses">R$ 0,00</h4>
+                                <p>Gastos Fixos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Perdas</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-card bg-danger text-white">
+                                <h4 id="totalDamages">R$ 0,00</h4>
+                                <p>Produtos Danificados</p>
+                            </div>
+                            <div class="stats-card bg-warning text-white mt-2">
+                                <h4 id="totalPersonalUseCost">R$ 0,00</h4>
+                                <p>Uso Próprio</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-chart-line"></i> Resultado</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-card bg-success text-white">
+                                <h4 id="netProfit">R$ 0,00</h4>
+                                <p>Lucro Líquido</p>
+                            </div>
+                            <div class="stats-card bg-info text-white mt-2">
+                                <h4 id="profitMarginPercent">0%</h4>
+                                <p>Margem Líquida</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-chart-bar"></i> Análise de Rentabilidade</h5>
+                        </div>
+                        <div class="card-body" style="height: 300px;">
+                            <canvas id="profitabilityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-chart-pie"></i> Distribuição de Custos</h5>
+                        </div>
+                        <div class="card-body" style="height: 300px;">
+                            <canvas id="costsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-calculator"></i> Análise de Cobertura</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="alert alert-info">
+                                        <h6>Ponto de Equilíbrio</h6>
+                                        <p>Valor mínimo de vendas para cobrir todos os custos:</p>
+                                        <h4 id="breakEvenPoint">R$ 0,00</h4>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="alert alert-warning">
+                                        <h6>Dias para Cobrir Gastos Fixos</h6>
+                                        <p>Tempo necessário para cobrir gastos fixos:</p>
+                                        <h4 id="daysToCoverExpenses">0 dias</h4>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="alert alert-success">
+                                        <h6>ROI Mensal</h6>
+                                        <p>Retorno sobre investimento:</p>
+                                        <h4 id="monthlyROI">0%</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="historial" class="section" style="display: none;">
+            <h2><i class="fas fa-history"></i> Histórico de Vendas</h2>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-filter"></i> Filtros</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Data Inicial</label>
+                                <input type="date" class="form-control" id="filterStartDate">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Data Final</label>
+                                <input type="date" class="form-control" id="filterEndDate">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Método de Pagamento</label>
+                                <select class="form-select" id="filterPaymentMethod">
+                                    <option value="">Todos</option>
+                                    <option value="Dinheiro">Dinheiro</option>
+                                    <option value="Cartão">Cartão</option>
+                                    <option value="Transferência">Transferência</option>
+                                    <option value="PIX">PIX</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="filterSales()">Filtrar</button>
+                    <button class="btn btn-secondary" onclick="clearFilters()">Limpar Filtros</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Histórico de Vendas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Produto</th>
+                                    <th>Quantidade</th>
+                                    <th>Total</th>
+                                    <th>Pagamento</th>
+                                    <th>Entrega</th>
+                                    <th>Cliente</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesHistoryTable">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">Nenhuma venda encontrada</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Modal -->
+    <div class="modal fade" id="expenseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus"></i> Adicionar Gasto Fixo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="expenseForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Descrição</label>
+                            <input type="text" class="form-control" id="expenseDescription" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Categoria</label>
+                            <select class="form-select" id="expenseCategory" required>
+                                <option value="">Selecione uma categoria</option>
+                                <option value="Luz">Luz</option>
+                                <option value="Água">Água</option>
+                                <option value="Telefone">Telefone</option>
+                                <option value="Internet">Internet</option>
+                                <option value="Aluguel">Aluguel</option>
+                                <option value="Funcionário">Funcionário</option>
+                                <option value="Combustível">Combustível</option>
+                                <option value="Manutenção">Manutenção</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Valor</label>
+                            <input type="number" class="form-control" id="expenseAmount" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Frequência</label>
+                            <select class="form-select" id="expenseFrequency" required>
+                                <option value="">Selecione a frequência</option>
+                                <option value="Mensal">Mensal</option>
+                                <option value="Semanal">Semanal</option>
+                                <option value="Anual">Anual</option>
+                                <option value="Único">Único</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Data de Vencimento</label>
+                            <input type="date" class="form-control" id="expenseDueDate" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Adicionar Gasto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal fade" id="productModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adicionar Produto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="productForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Código</label>
+                            <input type="text" class="form-control" id="productCode" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nome do Produto</label>
+                            <input type="text" class="form-control" id="productName" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Categoria</label>
+                            <select class="form-select" id="productCategory" required>
+                                <option value="">Selecione uma categoria</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Preço de Custo (R$)</label>
+                                    <input type="number" class="form-control" id="productCost" step="0.01" required onchange="calculateProductProfit()">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Preço de Venda (R$)</label>
+                                    <input type="number" class="form-control" id="productPrice" step="0.01" required onchange="calculateProductProfit()">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Análise de Margem</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Margem de Lucro</small>
+                                            <div class="fw-bold" id="profitMargin">-</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Lucro por Unidade</small>
+                                            <div class="fw-bold text-success" id="profitPerUnit">-</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Markup</small>
+                                            <div class="fw-bold text-primary" id="markup">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estoque Inicial</label>
+                            <input type="number" class="form-control" id="productStock" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estoque Mínimo</label>
+                            <input type="number" class="form-control" id="productMinStock" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descrição</label>
+                            <textarea class="form-control" id="productDescription" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Produto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sale Modal -->
+    <div class="modal fade" id="saleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar Venda</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="saleForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Produto</label>
+                                    <select class="form-control" id="saleProduct" required>
+                                        <option value="">Selecionar produto</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Quantidade</label>
+                                    <input type="number" class="form-control" id="saleQuantity" required min="1">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Método de Pagamento</label>
+                            <select class="form-select" id="paymentMethod" required>
+                                <option value="">Selecione o método de pagamento</option>
+                                <option value="dinheiro">Dinheiro</option>
+                                <option value="cartao">Cartão</option>
+                                <option value="transferencia">Transferência</option>
+                                <option value="pix">PIX</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Preço Total</label>
+                            <input type="number" class="form-control" id="saleTotal" step="0.01" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hasDelivery">
+                                <label class="form-check-label" for="hasDelivery">
+                                    <i class="fas fa-truck"></i> Entrega em domicílio
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="deliveryInfo" style="display: none;">
+                            <hr>
+                            <h6><i class="fas fa-map-marker-alt"></i> Informações de Entrega</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Bairro</label>
+                                        <input type="text" class="form-control" id="deliveryBarrio">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Preço de Entrega</label>
+                                        <input type="number" class="form-control" id="deliveryPrice" step="0.01" placeholder="0.00">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Rua</label>
+                                        <input type="text" class="form-control" id="deliveryCalle">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">N° Casa</label>
+                                        <input type="text" class="form-control" id="deliveryNumero">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Número de Contato</label>
+                                        <input type="tel" class="form-control" id="deliveryTelefono">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Descrição/Referência</label>
+                                <textarea class="form-control" id="deliveryDescripcion" rows="3" placeholder="Detalhes adicionais para encontrar o endereço"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nome do Cliente</label>
+                            <input type="text" class="form-control" id="customerName" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Registrar Venda</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div class="modal fade" id="editProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Produto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editProductForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="editProductId">
+                        <div class="mb-3">
+                            <label class="form-label">Código</label>
+                            <input type="text" class="form-control" id="editProductCode" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nome do Produto</label>
+                            <input type="text" class="form-control" id="editProductName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Categoria</label>
+                            <select class="form-select" id="editProductCategory" required>
+                                <option value="">Selecione uma categoria</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Preço de Custo (R$)</label>
+                                    <input type="number" class="form-control" id="editProductCost" step="0.01" required onchange="calculateEditProductProfit()">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Preço de Venda (R$)</label>
+                                    <input type="number" class="form-control" id="editProductPrice" step="0.01" required onchange="calculateEditProductProfit()">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Análise de Margem</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Margem de Lucro</small>
+                                            <div class="fw-bold" id="editProfitMargin">-</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Lucro por Unidade</small>
+                                            <div class="fw-bold text-success" id="editProfitPerUnit">-</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Markup</small>
+                                            <div class="fw-bold text-primary" id="editMarkup">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estoque</label>
+                            <input type="number" class="form-control" id="editProductStock" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estoque Mínimo</label>
+                            <input type="number" class="form-control" id="editProductMinStock" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descrição</label>
+                            <textarea class="form-control" id="editProductDescription" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Atualizar Produto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBiq5ZD4PSQuH6RXZSxBauqtKWgtODe0pg",
+            authDomain: "litoralcimentos-br2025.firebaseapp.com",
+            databaseURL: "https://litoralcimentos-br2025-default-rtdb.firebaseio.com",
+            projectId: "litoralcimentos-br2025",
+            storageBucket: "litoralcimentos-br2025.firebasestorage.app",
+            messagingSenderId: "784482033839",
+            appId: "1:784482033839:web:8961eb9960a6fad078345a",
+            measurementId: "G-HYP4MV0S45"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Global variables
+        let products = {};
+        let sales = {};
+        let categories = {};
+        let expenses = {};
+        let currentEditingProduct = null;
+        let salesChart = null;
+        let productsChart = null;
+
+        // Show loading spinner
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        // Hide loading spinner
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Show alert message
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Send delivery info via WhatsApp
+        window.sendWhatsApp = function(saleId) {
+            const sale = sales[saleId];
+            if (!sale || !sale.hasDelivery) {
+                showAlert('Venda não encontrada ou não possui entrega', 'danger');
+                return;
+            }
+
+            const delivery = sale.delivery;
+            const message = `🚚 *NOVA ENTREGA - LitoralCimentos*
+            
+📦 *Produto:* ${sale.productName}
+📊 *Quantidade:* ${sale.quantity}
+💰 *Total:* R$ ${parseFloat(sale.total).toFixed(2)}${sale.delivery && sale.delivery.price ? ` (+ R$ ${parseFloat(sale.delivery.price).toFixed(2)} entrega)` : ''}
+💳 *Pagamento:* ${sale.paymentMethod || 'Não informado'}
+👤 *Cliente:* ${sale.customerName}
+
+📍 *ENDEREÇO DE ENTREGA:*
+🏠 Bairro: ${delivery.barrio || 'Não informado'}
+🛣️ Rua: ${delivery.calle || 'Não informado'}
+🏡 Número: ${delivery.numero || 'Não informado'}
+📱 Contato: ${delivery.telefono || 'Não informado'}
+📝 Obs: ${delivery.descripcion || 'Nenhuma observação'}
+
+📅 Data: ${new Date(sale.date).toLocaleDateString('pt-BR')}
+
+_Mensagem enviada automaticamente pelo sistema LitoralCimentos_`;
+
+            // Número do motorista - WhatsApp configurado
+            const phoneNumber = '555499741252'; // Número do motorista: +55 54 9974-1252
+            const whatsappURL = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            
+            window.open(whatsappURL, '_blank');
+            showAlert('Informações de entrega enviadas ao motorista via WhatsApp', 'success');
+        };
+
+        // Show section
+        window.showSection = function(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).style.display = 'block';
+            
+            // Update active nav link
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`a[href="#${sectionId}"]`).classList.add('active');
+        };
+
+        // Load products from Firebase
+        function loadProducts() {
+            showLoading();
+            const productsRef = ref(database, 'products');
+            onValue(productsRef, (snapshot) => {
+                products = snapshot.val() || {};
+                renderProducts();
+                updateProductSelect();
+                updatePersonalUseProducts();
+                updateDashboard();
+                updateMovementProductDropdown();
+                updateFinancialAnalysis();
+                hideLoading();
+            });
+        }
+
+        // Load categories from Firebase
+        function loadCategories() {
+            const categoriesRef = ref(database, 'categories');
+            onValue(categoriesRef, (snapshot) => {
+                categories = snapshot.val() || {};
+                updateCategorySelects();
+                renderCategoriesList();
+            });
+        }
+
+        // Update all category select elements
+        function updateCategorySelects() {
+            const selects = ['productCategory', 'editProductCategory', 'filterCategory'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (!select) return;
+                
+                const currentValue = select.value;
+                
+                // Clear and add default option
+                if (selectId === 'filterCategory') {
+                    select.innerHTML = '<option value="">Todas as categorias</option>';
+                } else {
+                    select.innerHTML = '<option value="">Selecione uma categoria</option>';
+                }
+                
+                // Add categories from Firebase
+                Object.entries(categories).forEach(([key, category]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = category.name;
+                    select.appendChild(option);
+                });
+                
+                // Restore previous value if it exists
+                if (currentValue) {
+                    select.value = currentValue;
+                }
+            });
+        }
+
+        // Render categories list in management modal
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            container.innerHTML = '';
+            
+            if (Object.keys(categories).length === 0) {
+                container.innerHTML = '<div class="text-muted">Nenhuma categoria cadastrada</div>';
+                return;
+            }
+            
+            Object.entries(categories).forEach(([key, category]) => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.innerHTML = `
+                    <span>${category.name}</span>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCategory('${key}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Load sales from Firebase
+        function loadSales() {
+            const salesRef = ref(database, 'sales');
+            onValue(salesRef, (snapshot) => {
+                sales = snapshot.val() || {};
+                renderSales();
+                updateDashboard();
+            });
+        }
+
+        // Render products table
+        function renderProducts() {
+            const tbody = document.getElementById('productsTable');
+            if (Object.keys(products).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay productos registrados</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            Object.entries(products).forEach(([key, product]) => {
+                const stockStatus = getStockStatus(product.stock, product.minStock);
+                const row = document.createElement('tr');
+                row.className = stockStatus.class;
+                const categoryName = product.category && categories[product.category] ? categories[product.category].name : 'Sem categoria';
+                row.innerHTML = `
+                    <td>${product.code}</td>
+                    <td>${product.name}</td>
+                    <td><span class="badge bg-secondary">${categoryName}</span></td>
+                    <td>R$ ${parseFloat(product.price).toFixed(2)}</td>
+                    <td>${product.stock}</td>
+                    <td>${product.minStock}</td>
+                    <td><span class="badge ${stockStatus.badgeClass}">${stockStatus.text}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editProduct('${key}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${key}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Get stock status
+        function getStockStatus(stock, minStock) {
+            if (stock <= 0) {
+                return { class: 'stock-critical', badgeClass: 'bg-danger', text: 'Sem Estoque' };
+            } else if (stock <= minStock) {
+                return { class: 'stock-low', badgeClass: 'bg-warning', text: 'Estoque Baixo' };
+            } else {
+                return { class: '', badgeClass: 'bg-success', text: 'Disponível' };
+            }
+        }
+
+        // Update product select dropdown
+        function updateProductSelect() {
+            const select = document.getElementById('saleProduct');
+            select.innerHTML = '<option value="">Seleccionar producto</option>';
+            
+            Object.entries(products).forEach(([key, product]) => {
+                if (product.stock > 0) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${product.name} - R$ ${parseFloat(product.price).toFixed(2)} (Estoque: ${product.stock})`;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        // Render sales table
+        function renderSales() {
+            const tbody = document.getElementById('salesTable');
+            if (Object.keys(sales).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay ventas registradas</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            Object.entries(sales)
+                .sort(([,a], [,b]) => new Date(b.date) - new Date(a.date))
+                .forEach(([key, sale]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(sale.date).toLocaleDateString()}</td>
+                        <td>${sale.productName}</td>
+                        <td>${sale.quantity}</td>
+                        <td>R$ ${parseFloat(sale.total).toFixed(2)}</td>
+                        <td><span class="badge bg-info">${sale.paymentMethod || 'Não informado'}</span></td>
+                        <td>${sale.hasDelivery ? `<span class="delivery-badge"><i class="fas fa-truck"></i> Sim</span>` : '<span class="badge bg-secondary">Não</span>'}</td>
+                        <td>${sale.customerName}</td>
+                        <td>
+                            <span class="badge bg-${sale.hasDelivery ? (sale.deliveryStatus === 'finalizada' ? 'success' : 'warning') : 'success'}">${sale.hasDelivery ? (sale.deliveryStatus === 'finalizada' ? 'Finalizada' : 'Pendente') : 'Concluída'}</span>
+                            ${sale.hasDelivery && sale.deliveryStatus !== 'finalizada' ? `<br><button class="btn btn-sm btn-success mt-1" onclick="sendWhatsApp('${key}')"><i class="fab fa-whatsapp"></i> Enviar ao Motorista</button><br><button class="btn btn-sm btn-warning mt-1" onclick="markDeliveryComplete('${key}')"><i class="fas fa-check"></i> Marcar como Finalizada</button>` : ''}
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+        }
+
+        // Update dashboard statistics
+        function updateDashboard() {
+            const totalProducts = Object.keys(products).length;
+            const totalSales = Object.keys(sales).length;
+            const lowStockProducts = Object.values(products).filter(p => p.stock <= p.minStock).length;
+            const pendingDeliveries = Object.values(sales).filter(s => s.hasDelivery && s.deliveryStatus !== 'finalizada').length;
+
+            document.getElementById('totalProducts').textContent = totalProducts;
+            document.getElementById('totalSales').textContent = totalSales;
+            document.getElementById('lowStock').textContent = lowStockProducts;
+            document.getElementById('pendingDeliveries').textContent = pendingDeliveries;
+
+            updateStockAlerts();
+        }
+
+        // Update stock alerts
+        function updateStockAlerts() {
+            const alertsDiv = document.getElementById('stockAlerts');
+            const lowStockProducts = Object.values(products).filter(p => p.stock <= p.minStock);
+            
+            if (lowStockProducts.length === 0) {
+                alertsDiv.innerHTML = '<p class="text-muted">No hay alertas de stock por el momento.</p>';
+                return;
+            }
+
+            alertsDiv.innerHTML = '';
+            lowStockProducts.forEach(product => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert ${product.stock <= 0 ? 'alert-danger' : 'alert-warning'} d-flex align-items-center`;
+                alertDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <div>
+                        <strong>${product.name}</strong> - Estoque: ${product.stock}
+                        ${product.stock <= 0 ? ' (Sem estoque)' : ` (Mínimo: ${product.minStock})`}
+                    </div>
+                `;
+                alertsDiv.appendChild(alertDiv);
+            });
+        }
+
+        // Add product
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const productData = {
+                code: document.getElementById('productCode').value,
+                name: document.getElementById('productName').value,
+                category: document.getElementById('productCategory').value,
+                cost: parseFloat(document.getElementById('productCost').value),
+                price: parseFloat(document.getElementById('productPrice').value),
+                stock: parseInt(document.getElementById('productStock').value),
+                minStock: parseInt(document.getElementById('productMinStock').value),
+                description: document.getElementById('productDescription').value,
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                showLoading();
+                const productsRef = ref(database, 'products');
+                await push(productsRef, productData);
+                
+                // Reset form
+                document.getElementById('productForm').reset();
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
+                modal.hide();
+                
+                showAlert('Produto adicionado com sucesso', 'success');
+                hideLoading();
+            } catch (error) {
+                console.error('Error adding product:', error);
+                showAlert('Erro ao adicionar o produto', 'danger');
+                hideLoading();
+            }
+        });
+
+        // Edit product
+        window.editProduct = function(productId) {
+            const product = products[productId];
+            if (!product) return;
+
+            currentEditingProduct = productId;
+            document.getElementById('editProductId').value = productId;
+            document.getElementById('editProductCode').value = product.code;
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductCategory').value = product.category || '';
+            document.getElementById('editProductCost').value = product.cost || 0;
+            document.getElementById('editProductPrice').value = product.price;
+            document.getElementById('editProductStock').value = product.stock;
+            document.getElementById('editProductMinStock').value = product.minStock;
+            document.getElementById('editProductDescription').value = product.description || '';
+            
+            // Calculate and display profit margins
+            calculateEditProductProfit();
+
+            const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+            modal.show();
+        };
+
+        // Update product
+        document.getElementById('editProductForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentEditingProduct) return;
+
+            const productData = {
+                code: document.getElementById('editProductCode').value,
+                name: document.getElementById('editProductName').value,
+                category: document.getElementById('editProductCategory').value,
+                cost: parseFloat(document.getElementById('editProductCost').value),
+                price: parseFloat(document.getElementById('editProductPrice').value),
+                stock: parseInt(document.getElementById('editProductStock').value),
+                minStock: parseInt(document.getElementById('editProductMinStock').value),
+                description: document.getElementById('editProductDescription').value,
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                showLoading();
+                const productRef = ref(database, `products/${currentEditingProduct}`);
+                await update(productRef, productData);
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editProductModal'));
+                modal.hide();
+                
+                showAlert('Produto atualizado com sucesso', 'success');
+                hideLoading();
+            } catch (error) {
+                console.error('Error updating product:', error);
+                showAlert('Erro ao atualizar o produto', 'danger');
+                hideLoading();
+            }
+        });
+
+        // Delete product
+        window.deleteProduct = function(productId) {
+            const product = products[productId];
+            if (!product) return;
+
+            if (confirm(`Tem certeza de que deseja excluir o produto "${product.name}"?`)) {
+                showLoading();
+                const productRef = ref(database, `products/${productId}`);
+                remove(productRef).then(() => {
+                    showAlert('Produto excluído com sucesso', 'success');
+                    hideLoading();
+                }).catch((error) => {
+                    console.error('Error deleting product:', error);
+                    showAlert('Erro ao excluir o produto', 'danger');
+                    hideLoading();
+                });
+            }
+        };
+
+        // Handle delivery checkbox
+        document.getElementById('hasDelivery').addEventListener('change', function() {
+            const deliveryInfo = document.getElementById('deliveryInfo');
+            if (this.checked) {
+                deliveryInfo.style.display = 'block';
+            } else {
+                deliveryInfo.style.display = 'none';
+            }
+        });
+
+        // Calculate sale total
+        document.getElementById('saleProduct').addEventListener('change', calculateSaleTotal);
+        document.getElementById('saleQuantity').addEventListener('input', calculateSaleTotal);
+
+        function calculateSaleTotal() {
+            const productId = document.getElementById('saleProduct').value;
+            const quantity = parseInt(document.getElementById('saleQuantity').value) || 0;
+            
+            if (productId && products[productId] && quantity > 0) {
+                const total = products[productId].price * quantity;
+                document.getElementById('saleTotal').value = total.toFixed(2);
+            } else {
+                document.getElementById('saleTotal').value = '';
+            }
+        }
+
+        // Add sale
+        document.getElementById('saleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const productId = document.getElementById('saleProduct').value;
+            const quantity = parseInt(document.getElementById('saleQuantity').value);
+            const hasDelivery = document.getElementById('hasDelivery').checked;
+            
+            if (!productId || !products[productId]) {
+                showAlert('Deve selecionar um produto válido', 'danger');
+                return;
+            }
+
+            if (quantity > products[productId].stock) {
+                showAlert('Não há estoque suficiente disponível', 'danger');
+                return;
+            }
+
+            const saleData = {
+                productId: productId,
+                productName: products[productId].name,
+                quantity: quantity,
+                unitPrice: products[productId].price,
+                total: products[productId].price * quantity,
+                customerName: document.getElementById('customerName').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                hasDelivery: hasDelivery,
+                date: new Date().toISOString()
+            };
+
+            if (hasDelivery) {
+                const deliveryPrice = parseFloat(document.getElementById('deliveryPrice').value) || 0;
+                saleData.delivery = {
+                    barrio: document.getElementById('deliveryBarrio').value,
+                    calle: document.getElementById('deliveryCalle').value,
+                    numero: document.getElementById('deliveryNumero').value,
+                    telefono: document.getElementById('deliveryTelefono').value,
+                    descripcion: document.getElementById('deliveryDescripcion').value,
+                    price: deliveryPrice
+                };
+                saleData.deliveryStatus = 'pendente';
+                saleData.total = parseFloat(saleData.total) + deliveryPrice;
+            }
+
+            try {
+                showLoading();
+                
+                // Add sale
+                const salesRef = ref(database, 'sales');
+                await push(salesRef, saleData);
+                
+                // Update product stock
+                const newStock = products[productId].stock - quantity;
+                const productRef = ref(database, `products/${productId}/stock`);
+                await set(productRef, newStock);
+                
+                // Reset form
+                document.getElementById('saleForm').reset();
+                document.getElementById('deliveryInfo').style.display = 'none';
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('saleModal'));
+                modal.hide();
+                
+                showAlert('Venda registrada com sucesso', 'success');
+                hideLoading();
+            } catch (error) {
+                console.error('Error adding sale:', error);
+                showAlert('Erro ao registrar a venda', 'danger');
+                hideLoading();
+            }
+        });
+
+        // Initialize the application
+        function init() {
+            loadProducts();
+            loadSales();
+            loadCategories();
+            loadExpenses();
+            loadMovements();
+            showSection('dashboard');
+        }
+
+        // Search and filter functionality
+        document.getElementById('searchProducts').addEventListener('input', filterProducts);
+        document.getElementById('filterCategory').addEventListener('change', filterProducts);
+
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchProducts').value.toLowerCase();
+            const selectedCategory = document.getElementById('filterCategory').value;
+            
+            const tbody = document.getElementById('productsTable');
+            const rows = tbody.querySelectorAll('tr');
+            
+            rows.forEach((row, index) => {
+                if (index === 0 && row.querySelector('td[colspan]')) return; // Skip "no products" row
+                
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 3) return;
+                
+                const code = cells[0].textContent.toLowerCase();
+                const name = cells[1].textContent.toLowerCase();
+                const category = cells[2].textContent.toLowerCase();
+                
+                const matchesSearch = !searchTerm || 
+                    code.includes(searchTerm) || 
+                    name.includes(searchTerm) || 
+                    category.includes(searchTerm);
+                
+                const matchesCategory = !selectedCategory || 
+                    selectedCategory === Object.keys(products).find(key => {
+                        const product = products[key];
+                        return product.code === cells[0].textContent && product.category === selectedCategory;
+                    });
+                
+                row.style.display = (matchesSearch && matchesCategory) ? '' : 'none';
+            });
+        }
+
+        // Personal use functionality
+        document.getElementById('personalUseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const productId = document.getElementById('personalUseProduct').value;
+            const quantity = parseInt(document.getElementById('personalUseQuantity').value);
+            const description = document.getElementById('personalUseDescription').value;
+            
+            if (!productId || !products[productId]) {
+                showAlert('Deve selecionar um produto válido', 'danger');
+                return;
+            }
+
+            if (quantity > products[productId].stock) {
+                showAlert('Não há estoque suficiente disponível', 'danger');
+                return;
+            }
+
+            const personalUseData = {
+                productId: productId,
+                productName: products[productId].name,
+                quantity: quantity,
+                description: description,
+                date: new Date().toISOString(),
+                type: 'personal_use'
+            };
+
+            try {
+                showLoading();
+                
+                // Record personal use
+                const personalUseRef = ref(database, 'personal_use/' + Date.now());
+                await set(personalUseRef, personalUseData);
+                
+                // Update product stock
+                const newStock = products[productId].stock - quantity;
+                const productRef = ref(database, `products/${productId}/stock`);
+                await set(productRef, newStock);
+                
+                // Clear form and hide modal
+                document.getElementById('personalUseForm').reset();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('personalUseModal'));
+                modal.hide();
+                
+                showAlert('Uso pessoal registrado com sucesso', 'success');
+                hideLoading();
+            } catch (error) {
+                console.error('Error recording personal use:', error);
+                showAlert('Erro ao registrar uso pessoal', 'danger');
+                hideLoading();
+            }
+        });
+
+        // Update personal use product select when products change
+        function updatePersonalUseProducts() {
+            const select = document.getElementById('personalUseProduct');
+            select.innerHTML = '<option value="">Selecione um produto</option>';
+            
+            Object.entries(products).forEach(([key, product]) => {
+                if (product.stock > 0) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${product.name} (Estoque: ${product.stock})`;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        // Category management
+        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const categoryName = document.getElementById('categoryName').value.trim();
+            if (!categoryName) return;
+            
+            try {
+                showLoading();
+                const categoryRef = ref(database, 'categories/' + Date.now());
+                await set(categoryRef, {
+                    name: categoryName,
+                    createdAt: new Date().toISOString()
+                });
+                
+                document.getElementById('categoryForm').reset();
+                showAlert('Categoria adicionada com sucesso', 'success');
+                hideLoading();
+            } catch (error) {
+                console.error('Error adding category:', error);
+                showAlert('Erro ao adicionar categoria', 'danger');
+                hideLoading();
+            }
+        });
+
+        // Delete category
+        window.deleteCategory = async function(categoryId) {
+            if (!confirm('Tem certeza de que deseja excluir esta categoria?')) return;
+            
+            try {
+                showLoading();
+                const categoryRef = ref(database, `categories/${categoryId}`);
+                await remove(categoryRef);
+                showAlert('Categoria excluída com sucesso', 'success');
+                hideLoading();
+            } catch (error) {
+                console.error('Error deleting category:', error);
+                showAlert('Erro ao excluir categoria', 'danger');
+                hideLoading();
+            }
+        };
+
+        // Mark delivery as complete
+        window.markDeliveryComplete = async function(saleId) {
+            const sale = sales[saleId];
+            if (!sale || !sale.hasDelivery) {
+                showAlert('Venda não encontrada ou não possui entrega', 'danger');
+                return;
+            }
+
+            if (confirm('Marcar esta entrega como finalizada?')) {
+                try {
+                    showLoading();
+                    const saleRef = ref(database, `sales/${saleId}/deliveryStatus`);
+                    await set(saleRef, 'finalizada');
+                    showAlert('Entrega marcada como finalizada', 'success');
+                    hideLoading();
+                } catch (error) {
+                    console.error('Error updating delivery status:', error);
+                    showAlert('Erro ao atualizar status da entrega', 'danger');
+                    hideLoading();
+                }
+            }
+        };
+
+        // Load expenses from Firebase
+        function loadExpenses() {
+            const expensesRef = ref(database, 'expenses');
+            onValue(expensesRef, (snapshot) => {
+                expenses = snapshot.val() || {};
+                renderExpenses();
+                updateExpenseStats();
+            });
+        }
+
+        // Render expenses table
+        function renderExpenses() {
+            const tbody = document.getElementById('expensesTable');
+            tbody.innerHTML = '';
+
+            if (Object.keys(expenses).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Nenhum gasto cadastrado</td></tr>';
+                return;
+            }
+
+            Object.entries(expenses).forEach(([key, expense]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${expense.description}</td>
+                    <td><span class="badge bg-secondary">${expense.category}</span></td>
+                    <td>R$ ${parseFloat(expense.amount).toFixed(2)}</td>
+                    <td><span class="badge bg-info">${expense.frequency}</span></td>
+                    <td>${new Date(expense.dueDate).toLocaleDateString('pt-BR')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteExpense('${key}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Update expense statistics
+        function updateExpenseStats() {
+            const totalExpenses = Object.values(expenses).reduce((sum, expense) => {
+                return sum + parseFloat(expense.amount);
+            }, 0);
+
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const monthlyRevenue = Object.values(sales).filter(sale => {
+                const saleDate = new Date(sale.date);
+                return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
+            }).reduce((sum, sale) => sum + parseFloat(sale.total), 0);
+
+            const netProfit = monthlyRevenue - totalExpenses;
+            const profitMargin = monthlyRevenue > 0 ? ((netProfit / monthlyRevenue) * 100) : 0;
+
+            document.getElementById('totalExpenses').textContent = `R$ ${totalExpenses.toFixed(2)}`;
+            document.getElementById('totalRevenue').textContent = `R$ ${monthlyRevenue.toFixed(2)}`;
+            document.getElementById('netProfit').textContent = `R$ ${netProfit.toFixed(2)}`;
+            document.getElementById('profitMarginPercent').textContent = `${profitMargin.toFixed(1)}%`;
+        }
+
+        // Calculator functions
+        window.calculateSellingPrice = function() {
+            const costPrice = parseFloat(document.getElementById('costPrice').value);
+            const profitMargin = parseFloat(document.getElementById('profitMargin').value);
+
+            if (!costPrice || !profitMargin) {
+                showAlert('Por favor, preencha o preço de custo e a margem de lucro', 'warning');
+                return;
+            }
+
+            const sellingPrice = costPrice * (1 + profitMargin / 100);
+            const profit = sellingPrice - costPrice;
+
+            const result = document.getElementById('calculatorResult');
+            result.innerHTML = `
+                <strong>Resultado:</strong><br>
+                Preço de Venda: R$ ${sellingPrice.toFixed(2)}<br>
+                Lucro: R$ ${profit.toFixed(2)}
+            `;
+            result.style.display = 'block';
+        };
+
+        window.calculateProfitMargin = function() {
+            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
+            const costPrice = parseFloat(document.getElementById('costPriceReverse').value);
+
+            if (!sellingPrice || !costPrice) {
+                showAlert('Por favor, preencha o preço de venda e o preço de custo', 'warning');
+                return;
+            }
+
+            if (costPrice >= sellingPrice) {
+                showAlert('O preço de custo deve ser menor que o preço de venda', 'danger');
+                return;
+            }
+
+            const profit = sellingPrice - costPrice;
+            const profitMargin = ((profit / costPrice) * 100);
+
+            const result = document.getElementById('reverseCalculatorResult');
+            result.innerHTML = `
+                <strong>Resultado:</strong><br>
+                Margem de Lucro: ${profitMargin.toFixed(2)}%<br>
+                Lucro: R$ ${profit.toFixed(2)}
+            `;
+            result.style.display = 'block';
+        };
+
+        // Expense management
+        document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const expenseData = {
+                description: document.getElementById('expenseDescription').value,
+                category: document.getElementById('expenseCategory').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value),
+                frequency: document.getElementById('expenseFrequency').value,
+                dueDate: document.getElementById('expenseDueDate').value,
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                showLoading();
+                const expenseRef = ref(database, 'expenses/' + Date.now());
+                await set(expenseRef, expenseData);
+                
+                document.getElementById('expenseForm').reset();
+                bootstrap.Modal.getInstance(document.getElementById('expenseModal')).hide();
+                showAlert('Gasto adicionado com sucesso', 'success');
+                hideLoading();
+            } catch (error) {
+                console.error('Error adding expense:', error);
+                showAlert('Erro ao adicionar gasto', 'danger');
+                hideLoading();
+            }
+        });
+
+        window.deleteExpense = async function(expenseId) {
+            if (!confirm('Tem certeza de que deseja excluir este gasto?')) return;
+            
+            try {
+                showLoading();
+                const expenseRef = ref(database, `expenses/${expenseId}`);
+                await remove(expenseRef);
+                showAlert('Gasto excluído com sucesso', 'success');
+                hideLoading();
+            } catch (error) {
+                console.error('Error deleting expense:', error);
+                showAlert('Erro ao excluir gasto', 'danger');
+                hideLoading();
+            }
+        };
+
+        // Sales history functions
+        function renderSalesHistory() {
+            const tbody = document.getElementById('salesHistoryTable');
+            tbody.innerHTML = '';
+
+            if (Object.keys(sales).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Nenhuma venda encontrada</td></tr>';
+                return;
+            }
+
+            Object.entries(sales).forEach(([key, sale]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(sale.date).toLocaleDateString('pt-BR')}</td>
+                    <td>${sale.productName}</td>
+                    <td>${sale.quantity}</td>
+                    <td>R$ ${parseFloat(sale.total).toFixed(2)}</td>
+                    <td><span class="badge bg-info">${sale.paymentMethod || 'Não informado'}</span></td>
+                    <td>${sale.hasDelivery ? `<span class="delivery-badge"><i class="fas fa-truck"></i> Sim</span>` : '<span class="badge bg-secondary">Não</span>'}</td>
+                    <td>${sale.customerName}</td>
+                    <td>
+                        <span class="badge bg-${sale.hasDelivery ? (sale.deliveryStatus === 'finalizada' ? 'success' : 'warning') : 'success'}">${sale.hasDelivery ? (sale.deliveryStatus === 'finalizada' ? 'Finalizada' : 'Pendente') : 'Concluída'}</span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        window.filterSales = function() {
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            const paymentMethod = document.getElementById('filterPaymentMethod').value;
+
+            const tbody = document.getElementById('salesHistoryTable');
+            const rows = tbody.querySelectorAll('tr');
+
+            rows.forEach(row => {
+                if (row.cells.length < 8) return; // Skip empty row
+
+                const saleDate = row.cells[0].textContent;
+                const salePayment = row.cells[4].textContent;
+
+                let showRow = true;
+
+                if (startDate) {
+                    const start = new Date(startDate);
+                    const sale = new Date(saleDate.split('/').reverse().join('-'));
+                    if (sale < start) showRow = false;
+                }
+
+                if (endDate) {
+                    const end = new Date(endDate);
+                    const sale = new Date(saleDate.split('/').reverse().join('-'));
+                    if (sale > end) showRow = false;
+                }
+
+                if (paymentMethod && !salePayment.includes(paymentMethod)) {
+                    showRow = false;
+                }
+
+                row.style.display = showRow ? '' : 'none';
+            });
+        };
+
+        window.clearFilters = function() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            document.getElementById('filterPaymentMethod').value = '';
+            
+            const tbody = document.getElementById('salesHistoryTable');
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                row.style.display = '';
+            });
+        };
+
+        // Chart functions with Chart.js
+        window.showSalesChart = function(period) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (salesChart) {
+                salesChart.destroy();
+            }
+
+            // Filter sales data based on period
+            const salesData = filterSalesByPeriod(period);
+            const chartData = prepareSalesChartData(salesData, period);
+
+            if (chartData.labels.length === 0) {
+                // Show message when no data exists
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#6c757d';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Nenhuma venda registrada no período', ctx.canvas.width / 2, ctx.canvas.height / 2 - 10);
+                ctx.fillText(`${getPeriodTitle(period)}`, ctx.canvas.width / 2, ctx.canvas.height / 2 + 15);
+                return;
+            }
+
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Vendas (R$)',
+                        data: chartData.values,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.1,
+                        fill: true,
+                        pointBackgroundColor: '#3498db',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Vendas - ${getPeriodTitle(period)}`,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Vendas: R$ ' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toFixed(2);
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        };
+
+        function filterSalesByPeriod(period) {
+            const now = new Date();
+            const startDate = new Date();
+
+            switch(period) {
+                case '7days':
+                    startDate.setDate(now.getDate() - 7);
+                    break;
+                case '30days':
+                    startDate.setDate(now.getDate() - 30);
+                    break;
+                case 'month':
+                    startDate.setDate(1);
+                    break;
+                case 'year':
+                    startDate.setMonth(0, 1);
+                    break;
+                default:
+                    startDate.setDate(now.getDate() - 30);
+            }
+
+            return Object.values(sales).filter(sale => {
+                const saleDate = new Date(sale.date);
+                return saleDate >= startDate && saleDate <= now;
+            });
+        }
+
+        function prepareSalesChartData(salesData, period) {
+            const dataMap = new Map();
+            
+            salesData.forEach(sale => {
+                const saleDate = new Date(sale.date);
+                let key;
+                
+                if (period === '7days' || period === '30days') {
+                    key = saleDate.toLocaleDateString('pt-BR');
+                } else if (period === 'month') {
+                    key = saleDate.getDate().toString();
+                } else if (period === 'year') {
+                    key = saleDate.toLocaleDateString('pt-BR', { month: 'short' });
+                }
+                
+                if (!dataMap.has(key)) {
+                    dataMap.set(key, 0);
+                }
+                dataMap.set(key, dataMap.get(key) + parseFloat(sale.total));
+            });
+
+            // Only use real sales data - no sample/fallback data
+
+            // Sort by date order
+            const sortedEntries = Array.from(dataMap.entries()).sort((a, b) => {
+                if (period === 'month') {
+                    return parseInt(a[0]) - parseInt(b[0]);
+                } else if (period === 'year') {
+                    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                    return months.indexOf(a[0]) - months.indexOf(b[0]);
+                }
+                return 0; // For date strings, keep original order
+            });
+
+            return {
+                labels: sortedEntries.map(entry => entry[0]),
+                values: sortedEntries.map(entry => entry[1])
+            };
+        }
+
+        function getPeriodTitle(period) {
+            const titles = {
+                '7days': 'Últimos 7 Dias',
+                '30days': 'Últimos 30 Dias',
+                'month': 'Este Mês',
+                'year': 'Este Ano'
+            };
+            return titles[period] || 'Período Personalizado';
+        }
+
+        // Initialize products chart
+        function initProductsChart() {
+            const ctx = document.getElementById('productsChart').getContext('2d');
+            
+            if (productsChart) {
+                productsChart.destroy();
+            }
+
+            // Calculate most sold products
+            const productSales = new Map();
+            Object.values(sales).forEach(sale => {
+                const productName = sale.productName;
+                if (!productSales.has(productName)) {
+                    productSales.set(productName, 0);
+                }
+                productSales.set(productName, productSales.get(productName) + parseInt(sale.quantity));
+            });
+
+            // Get top 5 products from real sales data only
+            let sortedProducts = Array.from(productSales.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            const colors = [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0',
+                '#9966FF'
+            ];
+
+            if (sortedProducts.length === 0) {
+                // Show message when no data exists
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#6c757d';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Nenhum produto vendido ainda', ctx.canvas.width / 2, ctx.canvas.height / 2 - 10);
+                ctx.fillText('Faça sua primeira venda para ver os dados aqui', ctx.canvas.width / 2, ctx.canvas.height / 2 + 15);
+                return;
+            }
+
+            productsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: sortedProducts.map(item => item[0]),
+                    datasets: [{
+                        data: sortedProducts.map(item => item[1]),
+                        backgroundColor: colors.slice(0, sortedProducts.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Produtos Mais Vendidos',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + ' unidades vendidas';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize charts on section load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update sales history when section is shown
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.target.id === 'historial' && mutation.target.style.display !== 'none') {
+                        renderSalesHistory();
+                    }
+                    if (mutation.target.id === 'analytics' && mutation.target.style.display !== 'none') {
+                        // Initialize charts when analytics section is shown
+                        setTimeout(() => {
+                            showSalesChart('30days');
+                            initProductsChart();
+                        }, 100);
+                    }
+                    if (mutation.target.id === 'movements' && mutation.target.style.display !== 'none') {
+                        renderMovements();
+                        updateMovementStats();
+                    }
+                    if (mutation.target.id === 'financial' && mutation.target.style.display !== 'none') {
+                        updateFinancialAnalysis();
+                        setTimeout(() => {
+                            initFinancialCharts();
+                        }, 100);
+                    }
+                });
+            });
+
+            const historialSection = document.getElementById('historial');
+            const analyticsSection = document.getElementById('analytics');
+            const movementsSection = document.getElementById('movements');
+            const financialSection = document.getElementById('financial');
+            
+            if (historialSection) {
+                observer.observe(historialSection, { attributes: true, attributeFilter: ['style'] });
+            }
+            if (analyticsSection) {
+                observer.observe(analyticsSection, { attributes: true, attributeFilter: ['style'] });
+            }
+            if (movementsSection) {
+                observer.observe(movementsSection, { attributes: true, attributeFilter: ['style'] });
+            }
+            if (financialSection) {
+                observer.observe(financialSection, { attributes: true, attributeFilter: ['style'] });
+            }
+        });
+
+        // Handle active button state for period filters
+        window.setActiveButton = function(clickedButton) {
+            // Remove active class from all buttons in the same row
+            const buttons = clickedButton.parentNode.parentNode.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+            });
+            
+            // Add active class to clicked button
+            clickedButton.classList.remove('btn-outline-primary');
+            clickedButton.classList.add('btn-primary');
+        };
+
+        // Profit calculation functions for product form
+        window.calculateProductProfit = function() {
+            const cost = parseFloat(document.getElementById('productCost').value) || 0;
+            const price = parseFloat(document.getElementById('productPrice').value) || 0;
+            
+            if (cost > 0 && price > 0) {
+                const profit = price - cost;
+                const margin = ((profit / price) * 100);
+                const markup = ((profit / cost) * 100);
+                
+                document.getElementById('profitMargin').textContent = margin.toFixed(1) + '%';
+                document.getElementById('profitPerUnit').textContent = 'R$ ' + profit.toFixed(2);
+                document.getElementById('markup').textContent = markup.toFixed(1) + '%';
+            } else {
+                document.getElementById('profitMargin').textContent = '-';
+                document.getElementById('profitPerUnit').textContent = '-';
+                document.getElementById('markup').textContent = '-';
+            }
+        };
+
+        window.calculateEditProductProfit = function() {
+            const cost = parseFloat(document.getElementById('editProductCost').value) || 0;
+            const price = parseFloat(document.getElementById('editProductPrice').value) || 0;
+            
+            if (cost > 0 && price > 0) {
+                const profit = price - cost;
+                const margin = ((profit / price) * 100);
+                const markup = ((profit / cost) * 100);
+                
+                document.getElementById('editProfitMargin').textContent = margin.toFixed(1) + '%';
+                document.getElementById('editProfitPerUnit').textContent = 'R$ ' + profit.toFixed(2);
+                document.getElementById('editMarkup').textContent = markup.toFixed(1) + '%';
+            } else {
+                document.getElementById('editProfitMargin').textContent = '-';
+                document.getElementById('editProfitPerUnit').textContent = '-';
+                document.getElementById('editMarkup').textContent = '-';
+            }
+        };
+
+        // Movement fields update
+        window.updateMovementFields = function() {
+            const type = document.getElementById('movementType').value;
+            const valueField = document.getElementById('movementValueField');
+            
+            if (type === 'entrada' || type === 'perda' || type === 'uso_proprio') {
+                valueField.style.display = 'block';
+                document.getElementById('movementValue').required = true;
+            } else {
+                valueField.style.display = 'none';
+                document.getElementById('movementValue').required = false;
+            }
+        };
+
+        // Movement form handler
+        document.getElementById('movementForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const productId = document.getElementById('movementProduct').value;
+            const type = document.getElementById('movementType').value;
+            const quantity = parseInt(document.getElementById('movementQuantity').value);
+            const value = parseFloat(document.getElementById('movementValue').value) || 0;
+            const reason = document.getElementById('movementReason').value;
+            
+            if (!productId || !type || !quantity) {
+                showAlert('Preencha todos os campos obrigatórios', 'warning');
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                const movement = {
+                    productId,
+                    productName: products[productId].name,
+                    type,
+                    quantity,
+                    value,
+                    reason,
+                    date: new Date().toISOString(),
+                    total: quantity * value
+                };
+                
+                // Save movement
+                const movementRef = push(ref(database, 'movements'));
+                await set(movementRef, movement);
+                
+                // Update product stock based on movement type
+                const currentStock = parseInt(products[productId].stock);
+                let newStock = currentStock;
+                
+                switch(type) {
+                    case 'entrada':
+                        newStock = currentStock + quantity;
+                        break;
+                    case 'saida':
+                    case 'perda':
+                    case 'uso_proprio':
+                        newStock = currentStock - quantity;
+                        break;
+                    case 'ajuste':
+                        newStock = quantity; // Set exact quantity
+                        break;
+                }
+                
+                // Update product stock
+                const productRef = ref(database, `products/${productId}/stock`);
+                await set(productRef, newStock);
+                
+                showAlert(`Movimentação registrada com sucesso`, 'success');
+                document.getElementById('movementForm').reset();
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error registering movement:', error);
+                showAlert('Erro ao registrar movimentação', 'danger');
+                hideLoading();
+            }
+        });
+
+        // Load movements from Firebase
+        function loadMovements() {
+            const movementsRef = ref(database, 'movements');
+            onValue(movementsRef, (snapshot) => {
+                movements = snapshot.val() || {};
+                renderMovements();
+                updateMovementStats();
+            });
+        }
+
+        // Render movements table
+        function renderMovements() {
+            const tbody = document.getElementById('movementsList');
+            tbody.innerHTML = '';
+
+            if (Object.keys(movements).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Nenhuma movimentação registrada</td></tr>';
+                return;
+            }
+
+            Object.entries(movements).reverse().forEach(([key, movement]) => {
+                const row = document.createElement('tr');
+                
+                let typeClass = '';
+                let typeName = '';
+                switch(movement.type) {
+                    case 'entrada':
+                        typeClass = 'success';
+                        typeName = 'Entrada';
+                        break;
+                    case 'saida':
+                        typeClass = 'primary';
+                        typeName = 'Saída';
+                        break;
+                    case 'perda':
+                        typeClass = 'danger';
+                        typeName = 'Perda/Dano';
+                        break;
+                    case 'uso_proprio':
+                        typeClass = 'warning';
+                        typeName = 'Uso Próprio';
+                        break;
+                    case 'ajuste':
+                        typeClass = 'info';
+                        typeName = 'Ajuste';
+                        break;
+                }
+                
+                row.innerHTML = `
+                    <td>${new Date(movement.date).toLocaleDateString('pt-BR')}</td>
+                    <td>${movement.productName}</td>
+                    <td><span class="badge bg-${typeClass}">${typeName}</span></td>
+                    <td>${movement.quantity}</td>
+                    <td>R$ ${(movement.total || 0).toFixed(2)}</td>
+                    <td>${movement.reason || '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Update movement statistics
+        function updateMovementStats() {
+            let totalPurchases = 0;
+            let totalLosses = 0;
+            let totalPersonalUse = 0;
+            let totalAdjustments = 0;
+
+            Object.values(movements).forEach(movement => {
+                const total = movement.total || 0;
+                switch(movement.type) {
+                    case 'entrada':
+                        totalPurchases += total;
+                        break;
+                    case 'perda':
+                        totalLosses += total;
+                        break;
+                    case 'uso_proprio':
+                        totalPersonalUse += total;
+                        break;
+                    case 'ajuste':
+                        totalAdjustments += total;
+                        break;
+                }
+            });
+
+            document.getElementById('totalPurchases').textContent = `R$ ${totalPurchases.toFixed(2)}`;
+            document.getElementById('totalLosses').textContent = `R$ ${totalLosses.toFixed(2)}`;
+            document.getElementById('totalPersonalUse').textContent = `R$ ${totalPersonalUse.toFixed(2)}`;
+            document.getElementById('totalAdjustments').textContent = `R$ ${totalAdjustments.toFixed(2)}`;
+        }
+
+        // Update product dropdowns for movements
+        function updateMovementProductDropdown() {
+            const dropdown = document.getElementById('movementProduct');
+            dropdown.innerHTML = '<option value="">Selecione um produto</option>';
+            
+            Object.entries(products).forEach(([key, product]) => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `${product.name} (Estoque: ${product.stock})`;
+                dropdown.appendChild(option);
+            });
+        }
+
+        // Financial analysis functions
+        function updateFinancialAnalysis() {
+            // Calculate totals
+            const totalRevenue = Object.values(sales).reduce((sum, sale) => sum + parseFloat(sale.total), 0);
+            const totalCosts = Object.values(sales).reduce((sum, sale) => {
+                const product = Object.values(products).find(p => p.name === sale.productName);
+                const cost = product ? parseFloat(product.cost || 0) : 0;
+                return sum + (cost * parseInt(sale.quantity));
+            }, 0);
+            
+            const totalFixedExpenses = Object.values(expenses).reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+            
+            const totalDamages = Object.values(movements).filter(m => m.type === 'perda').reduce((sum, movement) => sum + (movement.total || 0), 0);
+            const totalPersonalUseCost = Object.values(movements).filter(m => m.type === 'uso_proprio').reduce((sum, movement) => sum + (movement.total || 0), 0);
+            
+            const grossProfit = totalRevenue - totalCosts;
+            const netProfit = grossProfit - totalFixedExpenses - totalDamages - totalPersonalUseCost;
+            const profitMarginPercent = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100) : 0;
+            
+            // Update display
+            document.getElementById('totalRevenue').textContent = `R$ ${totalRevenue.toFixed(2)}`;
+            document.getElementById('totalGrossProfit').textContent = `R$ ${grossProfit.toFixed(2)}`;
+            document.getElementById('totalCosts').textContent = `R$ ${totalCosts.toFixed(2)}`;
+            document.getElementById('totalFixedExpenses').textContent = `R$ ${totalFixedExpenses.toFixed(2)}`;
+            document.getElementById('totalDamages').textContent = `R$ ${totalDamages.toFixed(2)}`;
+            document.getElementById('totalPersonalUseCost').textContent = `R$ ${totalPersonalUseCost.toFixed(2)}`;
+            document.getElementById('netProfit').textContent = `R$ ${netProfit.toFixed(2)}`;
+            document.getElementById('profitMarginPercent').textContent = `${profitMarginPercent.toFixed(1)}%`;
+            
+            // Calculate coverage metrics
+            const breakEvenPoint = totalFixedExpenses + totalCosts;
+            const avgDailySales = totalRevenue / 30; // Approximate monthly average
+            const daysToCover = avgDailySales > 0 ? Math.ceil(totalFixedExpenses / avgDailySales) : 0;
+            const monthlyROI = totalFixedExpenses > 0 ? ((netProfit / totalFixedExpenses) * 100) : 0;
+            
+            document.getElementById('breakEvenPoint').textContent = `R$ ${breakEvenPoint.toFixed(2)}`;
+            document.getElementById('daysToCoverExpenses').textContent = `${daysToCover} dias`;
+            document.getElementById('monthlyROI').textContent = `${monthlyROI.toFixed(1)}%`;
+        }
+
+        // Initialize financial charts
+        let profitabilityChart, costsChart;
+
+        function initFinancialCharts() {
+            // Profitability Chart
+            const profitCtx = document.getElementById('profitabilityChart').getContext('2d');
+            if (profitabilityChart) profitabilityChart.destroy();
+            
+            profitabilityChart = new Chart(profitCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Receita Bruta', 'Custo dos Produtos', 'Gastos Fixos', 'Perdas', 'Lucro Líquido'],
+                    datasets: [{
+                        data: [
+                            Object.values(sales).reduce((sum, sale) => sum + parseFloat(sale.total), 0),
+                            Object.values(sales).reduce((sum, sale) => {
+                                const product = Object.values(products).find(p => p.name === sale.productName);
+                                const cost = product ? parseFloat(product.cost || 0) : 0;
+                                return sum + (cost * parseInt(sale.quantity));
+                            }, 0),
+                            Object.values(expenses).reduce((sum, expense) => sum + parseFloat(expense.amount), 0),
+                            Object.values(movements).filter(m => m.type === 'perda').reduce((sum, movement) => sum + (movement.total || 0), 0),
+                            0 // Will be calculated
+                        ],
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#fd7e14', '#17a2b8']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Costs Distribution Chart
+            const costsCtx = document.getElementById('costsChart').getContext('2d');
+            if (costsChart) costsChart.destroy();
+            
+            const productCosts = Object.values(sales).reduce((sum, sale) => {
+                const product = Object.values(products).find(p => p.name === sale.productName);
+                const cost = product ? parseFloat(product.cost || 0) : 0;
+                return sum + (cost * parseInt(sale.quantity));
+            }, 0);
+            
+            const fixedExpenses = Object.values(expenses).reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+            const losses = Object.values(movements).filter(m => m.type === 'perda').reduce((sum, movement) => sum + (movement.total || 0), 0);
+            
+            costsChart = new Chart(costsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Custo dos Produtos', 'Gastos Fixos', 'Perdas'],
+                    datasets: [{
+                        data: [productCosts, fixedExpenses, losses],
+                        backgroundColor: ['#ffc107', '#dc3545', '#fd7e14']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': R$ ' + context.parsed.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize movements data
+        let movements = {};
+
+        // Start the application
+        init();
+    </script>
+
+    <!-- Category Management Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-tags"></i> Gerenciar Categorias</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Adicionar Nova Categoria</h6>
+                            <form id="categoryForm" class="mb-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Nome da Categoria</label>
+                                    <input type="text" class="form-control" id="categoryName" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Adicionar
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Categorias Existentes</h6>
+                            <div id="categoriesList" class="list-group">
+                                <!-- Categories will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Personal Use Modal -->
+    <div class="modal fade" id="personalUseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-user"></i> Uso Pessoal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="personalUseForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Produto</label>
+                            <select class="form-select" id="personalUseProduct" required>
+                                <option value="">Selecione um produto</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Quantidade</label>
+                            <input type="number" class="form-control" id="personalUseQuantity" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descrição do uso</label>
+                            <textarea class="form-control" id="personalUseDescription" rows="3" placeholder="Ex: Reparação em casa, uso no escritório, etc."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Registrar Uso</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
