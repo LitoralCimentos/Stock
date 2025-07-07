@@ -1,3 +1,5 @@
+https://litoralcimentos.github.io/Stock/
+
 # 🏪 LitoralCimentos - Sistema de Gestão
 
 Sistema completo de gestão para loja de ferragens em arquivo HTML único com integração Firebase.
